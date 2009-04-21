@@ -393,3 +393,6 @@
 (define-macro (cl:mapcon fn . lists)
   `(apply cl:nconc (maplist ,fn ,@lists)))
 (define mapcon cl:mapcon)
+
+(define-macro (cl:count-if pred . lists) ; srfi-1
+  `(count ,pred ,@lists))

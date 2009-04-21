@@ -13,6 +13,13 @@ rule (S) --> (NP) (VP)
 (define (symbol . exprs)
   (string->symbol (apply string-append (map x->string exprs))))
 
+#;(define-syntax rule_
+  (syntax-rules ()
+	[(_ head arrow . body)
+	 `(funcall (%get ',arrow 'rule-function) ,head ,body) ]
+	[(_ head --> . body)
+	 `(funcall (%get '|-->| 'rule-function) ',head ',body) ]))
+
 (define-macro (rule head . args)
   (let-optionals* args ((arrow '|:-|) . body)
 	(let1 rv (funcall (%get arrow 'rule-function) head body)
@@ -39,7 +46,6 @@ rule (S) --> (NP) (VP)
   (if (null? body)
 	  '()
 	  (let1 goal (car body)
-		;;(display "goal = ") (write goal) (newline)
 		(cond
 		 [(eq? goal '!)
 		  (cons '! (make-dcg-body (cdr body) n))]
@@ -47,14 +53,34 @@ rule (S) --> (NP) (VP)
 		  (append (cdr goal)
 				  (make-dcg-body (cdr body) n))]
 		 [(dcg-word-list? goal)
-		  (format #t "WORDLIST ~a\n" (cdr goal))
-		  #;(cons `(= ,(symbol '?s n)
+		  (cons `(= ,(symbol '?s n)
 					(,@(cdr goal) . ,(symbol '?s (+ n 1))))
-				(make-dcg-body (cdr body) (+ n 1)))
-		  (list (cons (cadr goal) '?s) '?s)
-		  ]
+				(make-dcg-body (cdr body) (+ n 1)))]
 		 [else
 		  (cons (append goal (list (symbol '?s n)
 								   (symbol '?s (+ n 1))))
 				(make-dcg-body (cdr body) (+ n 1)))]
 		 ))))
+
+#|
+(use file.util)
+(define (load-rules file)
+  ;(let1 rule-func (%get '|-->| 'rule-function)
+  (for-each (lambda (sexp)
+										;(print "> " sexp)
+			  (case (car sexp)
+				[(rule)
+				 (let* ([head (second sexp)]
+						[arrow (third sexp)]
+						[arrow-func (%get '|-->| 'rule-function)]
+						[body (cdddr sexp)])
+				   (print "(<- " sexp ")")
+				   (funcall arrow-func head body)
+				   )]
+				[else
+				 (print "(<- " sexp ")")
+				 (add-clause (replace-?-vars (list sexp))) ; <- sexp
+				 ]
+				))
+			(file->sexp-list file)))
+|#
